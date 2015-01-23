@@ -578,7 +578,7 @@ struct rdx_rb_node *rdx_rb_find(struct rdx_rb_root *root, struct rdx_rb_node *el
 
 struct rdx_rb_node *rdx_rb_insert(struct rdx_rb_root *root, struct rdx_rb_node *elem)
 {
-	struct rdx_rb_node **new = &*(root->rb_node), *parent = NULL;
+	struct rdx_rb_node **new = &(root->rb_node), *parent = NULL;
 	while (*new) {
 		int result = root->strict_compare(elem, *new);
 		parent = *new;
