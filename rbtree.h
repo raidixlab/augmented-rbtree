@@ -38,12 +38,14 @@ struct rdx_rb_node {
 
 struct rdx_rb_root {
 	struct rdx_rb_node *rb_node;
+	int (*strict_compare)(struct rdx_rb_node *left, struct rdx_rb_node *right);
+	int (*weak_compare)(struct rdx_rb_node *left, struct rdx_rb_node *right);
 };
 
 
 #define rdx_rb_parent(r)   ((struct rdx_rb_node *)((r)->__rb_parent_color & ~3))
 
-#define RDX_RB_ROOT	(struct rdx_rb_root) { NULL, }
+#define RDX_RB_ROOT(rbcompare)	(struct rdx_rb_root) { NULL, rbcompare }
 #define	rdx_rb_entry(ptr, type, member) container_of(ptr, type, member)
 
 #define RDX_RB_EMPTY_ROOT(root)  ((root)->rb_node == NULL)
@@ -102,4 +104,8 @@ static inline void rdx_rb_link_node(struct rdx_rb_node * node, struct rdx_rb_nod
 			typeof(*pos), field); 1; }); \
 	     pos = n)
 
+extern struct rdx_rb_node *rdx_rb_find(struct rdx_rb_root *root, struct rdx_rb_node *elem);
+extern struct rdx_rb_node *rdx_rb_insert(struct rdx_rb_root *root, struct rdx_rb_node *elem);
+extern struct rdx_rb_node *rdx_rb_rightmost_less_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem);
+extern struct rdx_rb_node *rdx_rb_leftmost_greater_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem);
 #endif	/* _RDX_RBTREE_H */

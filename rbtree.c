@@ -558,3 +558,73 @@ struct rdx_rb_node *rdx_rb_first_postorder(const struct rdx_rb_root *root)
 	return rdx_rb_left_deepest_node(root->rb_node);
 }
 // EXPORT_SYMBOL(rdx_rb_first_postorder);
+
+struct rdx_rb_node *rdx_rb_find(struct rdx_rb_root *root, struct rdx_rb_node *elem)
+{
+	struct rdx_rb_node *node = root->rb_node;
+	while (node) {
+		int result;
+		result = root->strict_compare(elem, node);
+		if (result < 0) {
+			node = node->rb_left;
+		} else if (result > 0) {
+			node = node->rb_right;
+		} else {
+			return node;
+		}
+	}
+	return NULL;
+}
+
+struct rdx_rb_node *rdx_rb_insert(struct rdx_rb_root *root, struct rdx_rb_node *elem)
+{
+	struct rdx_rb_node **new = &*(root->rb_node), *parent = NULL;
+	while (*new) {
+		int result = root->strict_compare(elem, *new);
+		parent = *new;
+		if (result < 0) {
+			new = &((*new)->rb_left);
+		} else if (result > 0) {
+			new = &((*new)->rb_right);
+		} else {
+			return NULL;
+		}
+	}
+	rdx_rb_link_node(elem, parent, new);
+	return elem;
+}
+
+struct rdx_rb_node *rdx_rb_rightmost_less_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem)
+{
+	struct rdx_rb_node *node = root->rb_node;
+	struct rdx_rb_node *result_node = NULL;
+	while (node) {
+		int result;
+		result = root->weak_compare(node, elem);
+		if (result < 0 || result == 0) {
+			result_node = node;
+			node = node->rb_right;
+		} else {
+			node = node->rb_left;
+		}
+	}
+	return result_node;
+}
+
+struct rdx_rb_node *rdx_rb_leftmost_greater_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem)
+{
+	struct rdx_rb_node *node = root->rb_node;
+	struct rdx_rb_node *result_node = NULL;
+	while (node) {
+		int result;
+		result = root->weak_compare(node, elem);
+		if (result > 0 || result == 0) {
+			result_node = node;
+			node = node->rb_left;
+		} else {
+			node = node->rb_right;
+		}
+	}
+	return result_node;
+}
+
