@@ -25,12 +25,14 @@
 #ifndef	_RDX_RBTREE_H
 #define	_RDX_RBTREE_H
 
+#include <stdlib.h>
+
 // #include <linux/kernel.h>
 #include "kernel.h"
 #include "stddef.h"
 
 struct rdx_rb_node {
-	unsigned long  __rb_parent_color;
+	size_t __rb_parent_color;
 	struct rdx_rb_node *rb_right;
 	struct rdx_rb_node *rb_left;
 } __attribute__((aligned(sizeof(long))));
@@ -38,23 +40,31 @@ struct rdx_rb_node {
 
 struct rdx_rb_root {
 	struct rdx_rb_node *rb_node;
-	int (*strict_compare)(struct rdx_rb_node *left, struct rdx_rb_node *right);
-	int (*weak_compare)(struct rdx_rb_node *left, struct rdx_rb_node *right);
+	int (*strict_compare)(struct rdx_rb_node *left,
+			      struct rdx_rb_node *right);
+	int (*weak_compare)(struct rdx_rb_node *left,
+			    struct rdx_rb_node *right);
 };
 
 
-#define rdx_rb_parent(r)   ((struct rdx_rb_node *)((r)->__rb_parent_color & ~3))
+#define rdx_rb_parent(r)					\
+	((struct rdx_rb_node *)((r)->__rb_parent_color & ~3))
 
-#define RDX_RB_ROOT(rbcompare)	(struct rdx_rb_root) { NULL, rbcompare }
+#define RDX_RB_ROOT(rb_strict_compare, rb_weak_compare)	\
+	(struct rdx_rb_root) {				\
+		(struct rdx_rb_node*)NULL,		\
+		rb_strict_compare,			\
+		rb_weak_compare				\
+	}
 #define	rdx_rb_entry(ptr, type, member) container_of(ptr, type, member)
 
 #define RDX_RB_EMPTY_ROOT(root)  ((root)->rb_node == NULL)
 
 /* 'empty' nodes are nodes that are known not to be inserted in an rbree */
 #define RDX_RB_EMPTY_NODE(node)  \
-	((node)->__rb_parent_color == (unsigned long)(node))
+	((node)->__rb_parent_color == (size_t)(node))
 #define RDX_RB_CLEAR_NODE(node)  \
-	((node)->__rb_parent_color = (unsigned long)(node))
+	((node)->__rb_parent_color = (size_t)(node))
 
 
 extern void rdx_rb_insert_color(struct rdx_rb_node *, struct rdx_rb_root *);
@@ -72,14 +82,16 @@ extern struct rdx_rb_node *rdx_rb_first_postorder(const struct rdx_rb_root *);
 extern struct rdx_rb_node *rdx_rb_next_postorder(const struct rdx_rb_node *);
 
 /* Fast replacement of a single node without remove/rebalance/add/rebalance */
-extern void rdx_rb_replace_node(struct rdx_rb_node *victim, struct rdx_rb_node *new, 
-				struct rdx_rb_root *root);
+extern void
+rdx_rb_replace_node(struct rdx_rb_node *victim, struct rdx_rb_node *new,
+		    struct rdx_rb_root *root);
 
-static inline void rdx_rb_link_node(struct rdx_rb_node * node, struct rdx_rb_node * parent,
-				    struct rdx_rb_node ** rb_link)
+static inline void
+rdx_rb_link_node(struct rdx_rb_node * node, struct rdx_rb_node * parent,
+		 struct rdx_rb_node ** rb_link)
 {
-	node->__rb_parent_color = (unsigned long)parent;
-	node->rb_left = node->rb_right = NULL;
+	node->__rb_parent_color = (size_t)parent;
+	node->rb_left = node->rb_right = (struct rdx_rb_node*)NULL;
 
 	*rb_link = node;
 }
@@ -90,22 +102,34 @@ static inline void rdx_rb_link_node(struct rdx_rb_node * node, struct rdx_rb_nod
 	})
 
 /**
- * rdx_rbtree_postorder_for_each_entry_safe - iterate over rdx_rb_root in post order of
- * given type safe against removal of rdx_rb_node entry
+ * rdx_rbtree_postorder_for_each_entry_safe - iterate over rdx_rb_root in post
+ * order of given type safe against removal of rdx_rb_node entry
  *
  * @pos:	the 'type *' to use as a loop cursor.
  * @n:		another 'type *' to use as temporary storage
  * @root:	'rdx_rb_root *' of the rbtree.
  * @field:	the name of the rb_node field within 'type'.
  */
-#define rdx_rbtree_postorder_for_each_entry_safe(pos, n, root, field) \
-	for (pos = rdx_rb_entry_safe(rdx_rb_first_postorder(root), typeof(*pos), field); \
-	     pos && ({ n = rdx_rb_entry_safe(rdx_rb_next_postorder(&pos->field), \
-			typeof(*pos), field); 1; }); \
+#define rdx_rbtree_postorder_for_each_entry_safe(pos, n, root, field)	\
+	for (pos = rdx_rb_entry_safe(rdx_rb_first_postorder(root),	\
+				     typeof(*pos), field);		\
+	     pos && ({ n = rdx_rb_entry_safe(				\
+		rdx_rb_next_postorder(&pos->field),			\
+				      typeof(*pos), field); 1; });	\
 	     pos = n)
 
-extern struct rdx_rb_node *rdx_rb_find(struct rdx_rb_root *root, struct rdx_rb_node *elem);
-extern struct rdx_rb_node *rdx_rb_insert(struct rdx_rb_root *root, struct rdx_rb_node *elem);
-extern struct rdx_rb_node *rdx_rb_rightmost_less_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem);
-extern struct rdx_rb_node *rdx_rb_leftmost_greater_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem);
+extern struct rdx_rb_node *
+rdx_rb_find(struct rdx_rb_node *elem, struct rdx_rb_root *root);
+
+extern int
+rdx_rb_insert(struct rdx_rb_node *elem, struct rdx_rb_root *root);
+
+extern struct rdx_rb_node *
+rdx_rb_rightmost_less_equiv(struct rdx_rb_node *elem,
+			    struct rdx_rb_root *root);
+
+extern struct rdx_rb_node *
+rdx_rb_leftmost_greater_equiv(struct rdx_rb_node *elem,
+			      struct rdx_rb_root *root);
+
 #endif	/* _RDX_RBTREE_H */

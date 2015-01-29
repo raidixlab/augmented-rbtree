@@ -70,8 +70,10 @@ __rdx_rb_rotate_set_parents(struct rdx_rb_node *old, struct rdx_rb_node *new,
 }
 
 static __always_inline void
-__rdx_rb_insert(struct rdx_rb_node *node, struct rdx_rb_root *root,
-		void (*augment_rotate)(struct rdx_rb_node *old, struct rdx_rb_node *new))
+__rdx_rb_insert(
+	struct rdx_rb_node *node, struct rdx_rb_root *root,
+	void (*augment_rotate)(struct rdx_rb_node *old,
+			       struct rdx_rb_node *new))
 {
 	struct rdx_rb_node *parent = rdx_rb_red_parent(node), *gparent, *tmp;
 
@@ -111,7 +113,8 @@ __rdx_rb_insert(struct rdx_rb_node *node, struct rdx_rb_root *root,
 				rdx_rb_set_parent_color(parent, gparent, RDX_RB_BLACK);
 				node = gparent;
 				parent = rdx_rb_parent(node);
-				rdx_rb_set_parent_color(node, parent, RDX_RB_RED);
+				rdx_rb_set_parent_color(node, parent,
+							RDX_RB_RED);
 				continue;
 			}
 
@@ -134,7 +137,8 @@ __rdx_rb_insert(struct rdx_rb_node *node, struct rdx_rb_root *root,
 				if (tmp)
 					rdx_rb_set_parent_color(tmp, parent,
 								RDX_RB_BLACK);
-				rdx_rb_set_parent_color(parent, node, RDX_RB_RED);
+				rdx_rb_set_parent_color(parent, node,
+							RDX_RB_RED);
 				augment_rotate(parent, node);
 				parent = node;
 				tmp = node->rb_right;
@@ -164,7 +168,8 @@ __rdx_rb_insert(struct rdx_rb_node *node, struct rdx_rb_root *root,
 				rdx_rb_set_parent_color(parent, gparent, RDX_RB_BLACK);
 				node = gparent;
 				parent = rdx_rb_parent(node);
-				rdx_rb_set_parent_color(node, parent, RDX_RB_RED);
+				rdx_rb_set_parent_color(node, parent,
+							RDX_RB_RED);
 				continue;
 			}
 
@@ -176,7 +181,8 @@ __rdx_rb_insert(struct rdx_rb_node *node, struct rdx_rb_root *root,
 				if (tmp)
 					rdx_rb_set_parent_color(tmp, parent,
 								RDX_RB_BLACK);
-				rdx_rb_set_parent_color(parent, node, RDX_RB_RED);
+				rdx_rb_set_parent_color(parent, node,
+							RDX_RB_RED);
 				augment_rotate(parent, node);
 				parent = node;
 				tmp = node->rb_left;
@@ -199,8 +205,10 @@ __rdx_rb_insert(struct rdx_rb_node *node, struct rdx_rb_root *root,
  * and eliminate the dummy_rotate callback there
  */
 static __always_inline void
-____rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
-	void (*augment_rotate)(struct rdx_rb_node *old, struct rdx_rb_node *new))
+____rdx_rb_erase_color(
+	struct rdx_rb_node *parent, struct rdx_rb_root *root,
+	void (*augment_rotate)(struct rdx_rb_node *old,
+			       struct rdx_rb_node *new))
 {
 	struct rdx_rb_node *node = NULL, *sibling, *tmp1, *tmp2;
 
@@ -227,8 +235,8 @@ ____rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
 				parent->rb_right = tmp1 = sibling->rb_left;
 				sibling->rb_left = parent;
 				rdx_rb_set_parent_color(tmp1, parent, RDX_RB_BLACK);
-				__rdx_rb_rotate_set_parents(parent, sibling, root,
-							    RDX_RB_RED);
+				__rdx_rb_rotate_set_parents(parent, sibling,
+							    root, RDX_RB_RED);
 				augment_rotate(parent, sibling);
 				sibling = tmp1;
 			}
@@ -251,7 +259,8 @@ ____rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
 					 * if it was red, or by recursing at p.
 					 * p is red when coming from Case 1.
 					 */
-					rdx_rb_set_parent_color(sibling, parent,
+					rdx_rb_set_parent_color(sibling,
+								parent,
 								RDX_RB_RED);
 					if (rdx_rb_is_red(parent))
 						rdx_rb_set_black(parent);
@@ -313,8 +322,8 @@ ____rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
 				parent->rb_left = tmp1 = sibling->rb_right;
 				sibling->rb_right = parent;
 				rdx_rb_set_parent_color(tmp1, parent, RDX_RB_BLACK);
-				__rdx_rb_rotate_set_parents(parent, sibling, root,
-							    RDX_RB_RED);
+				__rdx_rb_rotate_set_parents(parent, sibling,
+							    root, RDX_RB_RED);
 				augment_rotate(parent, sibling);
 				sibling = tmp1;
 			}
@@ -323,7 +332,8 @@ ____rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
 				tmp2 = sibling->rb_right;
 				if (!tmp2 || rdx_rb_is_black(tmp2)) {
 					/* Case 2 - sibling color flip */
-					rdx_rb_set_parent_color(sibling, parent,
+					rdx_rb_set_parent_color(sibling,
+								parent,
 								RDX_RB_RED);
 					if (rdx_rb_is_red(parent))
 						rdx_rb_set_black(parent);
@@ -361,8 +371,10 @@ ____rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
 }
 
 /* Non-inline version for rb_erase_augmented() use */
-void __rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
-	void (*augment_rotate)(struct rdx_rb_node *old, struct rdx_rb_node *new))
+void __rdx_rb_erase_color(
+	struct rdx_rb_node *parent, struct rdx_rb_root *root,
+	void (*augment_rotate)(struct rdx_rb_node *old,
+			       struct rdx_rb_node *new))
 {
 	____rdx_rb_erase_color(parent, root, augment_rotate);
 }
@@ -375,9 +387,15 @@ void __rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
  * out of the rb_insert_color() and rb_erase() function definitions.
  */
 
-static inline void dummy_propagate(struct rdx_rb_node *node, struct rdx_rb_node *stop) {}
-static inline void dummy_copy(struct rdx_rb_node *old, struct rdx_rb_node *new) {}
-static inline void dummy_rotate(struct rdx_rb_node *old, struct rdx_rb_node *new) {}
+static inline void dummy_propagate(
+	struct rdx_rb_node *node __attribute__((unused)),
+	struct rdx_rb_node *stop __attribute__((unused))) {}
+static inline void dummy_copy(
+	struct rdx_rb_node *old __attribute__((unused)),
+	struct rdx_rb_node *new __attribute__((unused))) {}
+static inline void dummy_rotate(
+	struct rdx_rb_node *old __attribute__((unused)),
+	struct rdx_rb_node *new __attribute__((unused))) {}
 
 static const struct rdx_rb_augment_callbacks dummy_callbacks = {
 	dummy_propagate, dummy_copy, dummy_rotate
@@ -405,8 +423,11 @@ void rdx_rb_erase(struct rdx_rb_node *node, struct rdx_rb_root *root)
  * case, but this time with user-defined callbacks.
  */
 
-void __rdx_rb_insert_augmented(struct rdx_rb_node *node, struct rdx_rb_root *root,
-	void (*augment_rotate)(struct rdx_rb_node *old, struct rdx_rb_node *new))
+void
+__rdx_rb_insert_augmented(
+	struct rdx_rb_node *node, struct rdx_rb_root *root,
+	void (*augment_rotate)(struct rdx_rb_node *old,
+			       struct rdx_rb_node *new))
 {
 	__rdx_rb_insert(node, root, augment_rotate);
 }
@@ -519,7 +540,8 @@ void rdx_rb_replace_node(struct rdx_rb_node *victim, struct rdx_rb_node *new,
 }
 // EXPORT_SYMBOL(rdx_rb_replace_node);
 
-static struct rdx_rb_node *rdx_rb_left_deepest_node(const struct rdx_rb_node *node)
+static struct rdx_rb_node *
+rdx_rb_left_deepest_node(const struct rdx_rb_node *node)
 {
 	for (;;) {
 		if (node->rb_left)
@@ -559,24 +581,7 @@ struct rdx_rb_node *rdx_rb_first_postorder(const struct rdx_rb_root *root)
 }
 // EXPORT_SYMBOL(rdx_rb_first_postorder);
 
-struct rdx_rb_node *rdx_rb_find(struct rdx_rb_root *root, struct rdx_rb_node *elem)
-{
-	struct rdx_rb_node *node = root->rb_node;
-	while (node) {
-		int result;
-		result = root->strict_compare(elem, node);
-		if (result < 0) {
-			node = node->rb_left;
-		} else if (result > 0) {
-			node = node->rb_right;
-		} else {
-			return node;
-		}
-	}
-	return NULL;
-}
-
-struct rdx_rb_node *rdx_rb_insert(struct rdx_rb_root *root, struct rdx_rb_node *elem)
+int rdx_rb_insert(struct rdx_rb_node *elem, struct rdx_rb_root *root)
 {
 	struct rdx_rb_node **new = &(root->rb_node), *parent = NULL;
 	while (*new) {
@@ -587,14 +592,15 @@ struct rdx_rb_node *rdx_rb_insert(struct rdx_rb_root *root, struct rdx_rb_node *
 		} else if (result > 0) {
 			new = &((*new)->rb_right);
 		} else {
-			return NULL;
+			return false;
 		}
 	}
 	rdx_rb_link_node(elem, parent, new);
-	return elem;
+	return true;
 }
 
-struct rdx_rb_node *rdx_rb_rightmost_less_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem)
+struct rdx_rb_node *
+rdx_rb_rightmost_less_equiv(struct rdx_rb_node *elem, struct rdx_rb_root *root)
 {
 	struct rdx_rb_node *node = root->rb_node;
 	struct rdx_rb_node *result_node = NULL;
@@ -611,7 +617,9 @@ struct rdx_rb_node *rdx_rb_rightmost_less_equiv(struct rdx_rb_root *root, struct
 	return result_node;
 }
 
-struct rdx_rb_node *rdx_rb_leftmost_greater_equiv(struct rdx_rb_root *root, struct rdx_rb_node *elem)
+struct rdx_rb_node *
+rdx_rb_leftmost_greater_equiv(struct rdx_rb_node *elem,
+			      struct rdx_rb_root *root)
 {
 	struct rdx_rb_node *node = root->rb_node;
 	struct rdx_rb_node *result_node = NULL;
@@ -627,4 +635,3 @@ struct rdx_rb_node *rdx_rb_leftmost_greater_equiv(struct rdx_rb_root *root, stru
 	}
 	return result_node;
 }
-

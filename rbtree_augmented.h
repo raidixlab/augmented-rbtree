@@ -41,8 +41,10 @@ struct rdx_rb_augment_callbacks {
 	void (*rotate)(struct rdx_rb_node *old, struct rdx_rb_node *new);
 };
 
-extern void __rdx_rb_insert_augmented(struct rdx_rb_node *node, struct rdx_rb_root *root,
-	void (*augment_rotate)(struct rdx_rb_node *old, struct rdx_rb_node *new));
+extern void __rdx_rb_insert_augmented(
+	struct rdx_rb_node *node, struct rdx_rb_root *root,
+	void (*augment_rotate)(struct rdx_rb_node *old,
+			       struct rdx_rb_node *new));
 /*
  * Fixup the rbtree and update the augmented information when rebalancing.
  *
@@ -61,42 +63,10 @@ rdx_rb_insert_augmented(struct rdx_rb_node *node, struct rdx_rb_root *root,
 	augment->propagate(node, NULL);
 }
 
-#define RDX_RB_DECLARE_CALLBACKS(rbstatic, rbname, rbstruct, rbfield,		\
-				 rbtype, rbaugmented, rbcompute) 		\
-static inline void								\
-rbname ## _propagate(struct rdx_rb_node *rb, struct rdx_rb_node *stop)		\
-{										\
-	while (rb != stop) {							\
-		rbstruct *node = rdx_rb_entry(rb, rbstruct, rbfield);		\
-		rbtype augmented = rbcompute(node);				\
-		node->rbaugmented = augmented;					\
-		rb = rdx_rb_parent(&node->rbfield);				\
-	}									\
-}										\
-static inline void								\
-rbname ## _copy(struct rdx_rb_node *rb_old, struct rdx_rb_node *rb_new)		\
-{										\
-	rbstruct *old = rdx_rb_entry(rb_old, rbstruct, rbfield);		\
-	rbstruct *new = rdx_rb_entry(rb_new, rbstruct, rbfield);		\
-	new->rbaugmented = old->rbaugmented;					\
-}										\
-static void									\
-rbname ## _rotate(struct rdx_rb_node *rb_old, struct rdx_rb_node *rb_new)	\
-{										\
-	rbstruct *old = rdx_rb_entry(rb_old, rbstruct, rbfield);		\
-	rbstruct *new = rdx_rb_entry(rb_new, rbstruct, rbfield);		\
-	old->rbaugmented = rbcompute(old);					\
-	new->rbaugmented = rbcompute(new);					\
-}										\
-rbstatic const struct rdx_rb_augment_callbacks rbname = {			\
-	rbname ## _propagate, rbname ## _copy, rbname ## _rotate		\
-};
-
-
 #define	RDX_RB_RED	0
 #define	RDX_RB_BLACK	1
 
-#define __rdx_rb_parent(pc)    ((struct rdx_rb_node *)(pc & ~3))
+#define __rdx_rb_parent(pc)    ((struct rdx_rb_node *)(pc & (size_t)(~3)))
 
 #define __rdx_rb_color(pc)     ((pc) & 1)
 #define __rdx_rb_is_black(pc)  __rdx_rb_color(pc)
@@ -105,15 +75,16 @@ rbstatic const struct rdx_rb_augment_callbacks rbname = {			\
 #define rdx_rb_is_red(rb)      __rdx_rb_is_red((rb)->__rb_parent_color)
 #define rdx_rb_is_black(rb)    __rdx_rb_is_black((rb)->__rb_parent_color)
 
-static inline void rdx_rb_set_parent(struct rdx_rb_node *rb, struct rdx_rb_node *p)
+static inline void rdx_rb_set_parent(struct rdx_rb_node *rb,
+				     struct rdx_rb_node *p)
 {
-	rb->__rb_parent_color = rdx_rb_color(rb) | (unsigned long)p;
+	rb->__rb_parent_color = rdx_rb_color(rb) | (size_t)p;
 }
 
 static inline void rdx_rb_set_parent_color(struct rdx_rb_node *rb,
 					   struct rdx_rb_node *p, int color)
 {
-	rb->__rb_parent_color = (unsigned long)p | color;
+	rb->__rb_parent_color = (size_t)p | color;
 }
 
 static inline void
@@ -129,10 +100,12 @@ __rdx_rb_change_child(struct rdx_rb_node *old, struct rdx_rb_node *new,
 		root->rb_node = new;
 }
 
-extern void __rdx_rb_erase_color(struct rdx_rb_node *parent, struct rdx_rb_root *root,
-	void (*augment_rotate)(struct rdx_rb_node *old, struct rdx_rb_node *new));
+extern void __rdx_rb_erase_color(
+	struct rdx_rb_node *parent, struct rdx_rb_root *root,
+	void (*augment_rotate)(struct rdx_rb_node *old,
+			       struct rdx_rb_node *new));
 
-static __always_inline struct rdx_rb_node *
+static inline struct rdx_rb_node *
 __rdx_rb_erase_augmented(struct rdx_rb_node *node, struct rdx_rb_root *root,
 			 const struct rdx_rb_augment_callbacks *augment)
 {
@@ -229,14 +202,89 @@ __rdx_rb_erase_augmented(struct rdx_rb_node *node, struct rdx_rb_root *root,
 	return rebalance;
 }
 
-static __always_inline void
+static inline void
 rdx_rb_erase_augmented(struct rdx_rb_node *node, struct rdx_rb_root *root,
 		       const struct rdx_rb_augment_callbacks *augment)
 {
-	struct rdx_rb_node *rebalance = __rdx_rb_erase_augmented(node, root, augment);
+	struct rdx_rb_node *rebalance =
+		__rdx_rb_erase_augmented(node, root, augment);
 	if (rebalance) {
 		__rdx_rb_erase_color(rebalance, root, augment->rotate);
 	}
+}
+
+#define RDX_RB_DECLARE_CALLBACKS(rbstatic, rbname, rbstruct, rbfield,	\
+				 rbtype, rbaugmented, rbcompute,	\
+				 rbtree_name)				\
+static inline void							\
+rbname ## _propagate(struct rdx_rb_node *rb, struct rdx_rb_node *stop)	\
+{									\
+	while (rb != stop) {						\
+		rbstruct *node = rdx_rb_entry(rb, rbstruct, rbfield);	\
+		rbtype augmented = rbcompute(node);			\
+		node->rbaugmented = augmented;				\
+		rb = rdx_rb_parent(&node->rbfield);			\
+	}								\
+}									\
+static inline void							\
+rbname ## _copy(struct rdx_rb_node *rb_old, struct rdx_rb_node *rb_new)	\
+{									\
+	rbstruct *old = rdx_rb_entry(rb_old, rbstruct, rbfield);	\
+	rbstruct *new = rdx_rb_entry(rb_new, rbstruct, rbfield);	\
+	new->rbaugmented = old->rbaugmented;				\
+}									\
+static void								\
+rbname ## _rotate(struct rdx_rb_node *rb_old,				\
+		  struct rdx_rb_node *rb_new)				\
+{									\
+	rbstruct *old = rdx_rb_entry(rb_old, rbstruct, rbfield);	\
+	rbstruct *new = rdx_rb_entry(rb_new, rbstruct, rbfield);	\
+	old->rbaugmented = rbcompute(old);				\
+	new->rbaugmented = rbcompute(new);				\
+}									\
+rbstatic const struct rdx_rb_augment_callbacks rbname = {		\
+	rbname ## _propagate, rbname ## _copy, rbname ## _rotate	\
+};									\
+static int								\
+rbtree_name ## _insert(rbstruct *elem, struct rdx_rb_root *root)	\
+{									\
+	int result = rdx_rb_insert(&(elem->rbfield), root);		\
+	if (result) {							\
+		rdx_rb_insert_augmented(&(elem->rbfield),		\
+					root, &rbname);			\
+		return true;						\
+	} else {							\
+		return false;						\
+	}								\
+}									\
+static void								\
+rbtree_name ## _erase(rbstruct *elem, struct rdx_rb_root *root)		\
+{									\
+	rdx_rb_erase_augmented(&(elem->rbfield), root, &rbname);	\
+}									\
+static rbstruct *							\
+rbtree_name ## _rightmost_less_equiv(rbstruct *elem,			\
+				     struct rdx_rb_root *root)		\
+{									\
+	struct rdx_rb_node *result =					\
+		rdx_rb_rightmost_less_equiv(&(elem->rbfield), root);	\
+	if (result) {							\
+		return container_of(result, rbstruct, rbfield);		\
+	} else {							\
+		return NULL;						\
+	}								\
+}									\
+static rbstruct *							\
+rbtree_name ## _leftmost_greater_equiv(rbstruct *elem,			\
+				       struct rdx_rb_root *root)	\
+{									\
+	struct rdx_rb_node *result =					\
+		rdx_rb_leftmost_greater_equiv(&(elem->rbfield), root);	\
+	if (result) {							\
+		return container_of(result, rbstruct, rbfield);		\
+	} else {							\
+		return NULL;						\
+	}								\
 }
 
 #endif	/* _RDX_RBTREE_AUGMENTED_H */
